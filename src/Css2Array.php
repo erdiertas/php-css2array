@@ -15,7 +15,7 @@ class Css2Array
     public function fileStyle($filename)
     {
         $css = file_get_contents($filename);
-        return $this->getObject($css);
+        return $this->getArray($css);
     }
 
     /**
@@ -24,50 +24,50 @@ class Css2Array
      */
     public function style($css)
     {
-        return $this->getObject($css);
+        return $this->getArray($css);
     }
 
     /**
      * @param $css
      * @return array
      */
-    private function getObject($css)
+    private function getArray($css)
     {
         $regex = array(
-            "`^([\t\s]+)`ism"=>'',
-            "`^\/\*(.+?)\*\/`ism"=>"",
-            "`([\n\A;]+)\/\*(.+?)\*\/`ism"=>"$1",
-            "`([\n\A;\s]+)//(.+?)[\n\r]`ism"=>"$1\n",
-            "`(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+`ism"=>"\n",
+            "`^([\t\s]+)`ism" => '',
+            "`^\/\*(.+?)\*\/`ism" => "",
+            "`([\n\A;]+)\/\*(.+?)\*\/`ism" => "$1",
+            "`([\n\A;\s]+)//(.+?)[\n\r]`ism" => "$1\n",
+            "`(^[\r\n]*|[\r\n]+)[\s\t]*[\r\n]+`ism" => "\n",
             '#/\*(?:.(?!/)|[^\*](?=/)|(?<!\*)/)*\*/#s' => "$1"
         );
-        $css = preg_replace(array_keys($regex),$regex,$css);
+        $css = preg_replace(array_keys($regex), $regex, $css);
 
         $css = str_replace("}", "{", $css);
         $css = str_replace("}", "{", $css);
-        $a = explode("{", $css);
+        $css = explode("{", $css);
 
-        $o = [];
+        $array = [];
         $lastMedia = "";
         $lastElement = "";
-        foreach ($a AS $value) {
+        foreach ($css AS $value) {
             $value = str_replace(["\n", "  "], " ", $value);
             $value = trim($value);
             if ((strpos($value, "@media") !== false) && $lastMedia === "") {
-                $lastMedia = count($o);
-                $o[$lastMedia] = [
+                $lastMedia = count($array);
+                $array[$lastMedia] = [
                     "media" => $value,
                     "elements" => []
                 ];
             } elseif ($lastElement === "" && $value !== "") {
                 if ($lastMedia === "") {
-                    $lastMedia = count($o);
-                    $o[$lastMedia] = [
+                    $lastMedia = count($array);
+                    $array[$lastMedia] = [
                         "media" => "__GLOBAL__",
                         "elements" => []
                     ];
                 }
-                $lastElement = count($o[$lastMedia]["elements"]);
+                $lastElement = count($array[$lastMedia]["elements"]);
                 $elements = explode(",", $value);
                 $elementsArray = [];
                 foreach ($elements AS $value_element) {
@@ -78,7 +78,7 @@ class Css2Array
                         "extent" => count(preg_split('/(\.|#)/', $value_element))
                     ];
                 }
-                $o[$lastMedia]["elements"][$lastElement] = [
+                $array[$lastMedia]["elements"][$lastElement] = [
                     "selectors" => $elementsArray,
                     "css" => ["erd"]
                 ];
@@ -93,9 +93,9 @@ class Css2Array
                     $cssArray[$cssKey] = implode(":", $value_css);
 
                 }
-                $o[$lastMedia]["elements"][$lastElement]["css"] = $cssArray;
+                $array[$lastMedia]["elements"][$lastElement]["css"] = $cssArray;
                 $lastElement = "";
-                if ($o[$lastMedia]["media"] == "__GLOBAL__") {
+                if ($array[$lastMedia]["media"] == "__GLOBAL__") {
                     $lastMedia = "";
                 }
             } else {
@@ -103,6 +103,6 @@ class Css2Array
                 $lastMedia = "";
             }
         }
-        return $o;
+        return $array;
     }
 }
